@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: docker.io/YOUR_DOCKERHUB_USERNAME/self-healing-api:latest
+          image: docker.io/sadsmiskin/self-healing-api:latest
           imagePullPolicy: Always
           ports:
             - name: http
