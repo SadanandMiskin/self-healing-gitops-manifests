@@ -7,7 +7,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/ci.yml"
-  workflow_dispatch:
+  # workflow_dispatch:
 
 env:
   IMAGE_NAME: self-healing-api
