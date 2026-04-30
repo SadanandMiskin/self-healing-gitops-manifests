@@ -15,6 +15,7 @@ The project is intentionally small:
 |-- .github/
 |   `-- workflows/
 |       `-- ci.yml
+|-- run_agent.py
 |-- agents/
 |   |-- README.md
 |   |-- agent/
@@ -26,6 +27,7 @@ The project is intentionally small:
 |   |   |-- executor.py
 |   |   |-- fixer.py
 |   |   |-- main.py
+|   |   |-- state.py
 |   |   `-- observer.py
 |   |-- config.example.yaml
 |   |-- requirements.txt
@@ -49,8 +51,7 @@ The project is intentionally small:
 |       |-- prometheus-alert-rule.yaml
 |       `-- prometheus-values.yaml
 `-- scripts/
-    |-- demo-agent-local.ps1
-    `-- validate.ps1
+    `-- validate.py
 ```
 
 ## GitOps Flow
@@ -72,6 +73,7 @@ Install:
 - Argo CD CLI
 - GitHub CLI: `gh`
 - Python 3.11+
+- Gemini API key from Google AI Studio
 
 Docker Hub requirements:
 
@@ -84,6 +86,7 @@ GitHub requirements:
 - App repo: contains `app/` and `.github/workflows/ci.yml`
 - Manifests repo: contains `manifests/`
 - `gh auth login` completed locally for PR automation
+- `GEMINI_API_KEY` environment variable set for Gemini diagnosis
 
 You can keep this scaffold as one local folder for learning, but the production-style GitOps model treats `app/` and `manifests/` as separate repositories.
 
@@ -196,45 +199,24 @@ curl http://localhost:9090/api/v1/alerts
 
 ## F. Run Agent
 
-Install Python dependencies:
+Set your Gemini API key:
 
 ```powershell
-cd agents
-python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
+$env:GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 ```
 
-Create config:
+Run continuously with one Python command from the project root:
 
 ```powershell
-Copy-Item config.example.yaml config.local.yaml
+python run_agent.py --github-repo OWNER/MANIFESTS_REPO --manifests-repo-path C:\absolute\path\to\manifests-repo
 ```
 
-Edit `agents/config.local.yaml`:
+The launcher installs `agents/requirements.txt` with the Python interpreter running it, creates `agents/config.local.yaml` if missing, and starts the continuous Prometheus polling loop. You can also put `GITHUB_REPO` and `MANIFESTS_REPO_PATH` in your environment and run only `python run_agent.py`.
 
-- `manifests_repo_path`: absolute path to your local manifests repository
-- `github_repo`: `OWNER/MANIFESTS_REPO`
-- `base_branch`: usually `main`
-- `deployment_path`: path to `deployment.yaml` inside the manifests repo
-
-Run with a mock alert and mock LLM:
+Debug a single cycle with a mock alert and mock LLM:
 
 ```powershell
-python -m agent.main --config config.local.yaml --mock-alert
-```
-
-Run against Prometheus:
-
-```powershell
-python -m agent.main --config config.local.yaml --prometheus-url http://localhost:9090
-```
-
-Use OpenAI diagnosis instead of mock diagnosis:
-
-```powershell
-$env:OPENAI_API_KEY="<YOUR_KEY>"
-python -m agent.main --config config.local.yaml --prometheus-url http://localhost:9090 --llm openai
+python run_agent.py --mock-alert --llm mock --once --dry-run
 ```
 
 ## G. Fix via GitOps
@@ -310,7 +292,7 @@ Expected healthy response:
 5. Pod enters `CrashLoopBackOff`.
 6. Confirm logs show missing `REQUIRED_GREETING`.
 7. Prometheus alert fires.
-8. Run the agent.
+8. Start the continuously running agent.
 9. Agent opens PR that adds `REQUIRED_GREETING`.
 10. Merge PR.
 11. Argo CD auto-syncs.

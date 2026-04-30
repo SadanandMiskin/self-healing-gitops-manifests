@@ -15,7 +15,9 @@ class AgentConfig:
     required_env_value: str
     prometheus_url: str
     llm_provider: str
-    openai_model: str
+    gemini_model: str
+    poll_interval_seconds: int
+    state_file: Path
     manifests_repo_path: Path
     deployment_path: Path
     github_repo: str
@@ -39,8 +41,10 @@ def load_config(path: str | Path) -> AgentConfig:
         required_env_name=raw["required_env_name"],
         required_env_value=raw["required_env_value"],
         prometheus_url=raw.get("prometheus_url", "http://localhost:9090"),
-        llm_provider=raw.get("llm_provider", "mock"),
-        openai_model=raw.get("openai_model", "gpt-4.1-mini"),
+        llm_provider=raw.get("llm_provider", "gemini"),
+        gemini_model=raw.get("gemini_model", "gemini-2.5-flash-lite"),
+        poll_interval_seconds=int(raw.get("poll_interval_seconds", 30)),
+        state_file=Path(raw.get("state_file", ".agent-state.yaml")),
         manifests_repo_path=Path(raw["manifests_repo_path"]),
         deployment_path=Path(raw["deployment_path"]),
         github_repo=raw["github_repo"],

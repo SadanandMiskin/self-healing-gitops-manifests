@@ -94,31 +94,22 @@ curl http://localhost:9090/api/v1/alerts
 
 ## 7. Run Agent
 
-```powershell
-cd agents
-python -m venv .venv
-.\\.venv\\Scripts\\Activate.ps1
-pip install -r requirements.txt
-Copy-Item config.example.yaml config.local.yaml
-```
-
-Edit `config.local.yaml` and set:
-
-```yaml
-manifests_repo_path: C:\absolute\path\to\manifests-repo
-github_repo: OWNER/self-healing-gitops-manifests
-```
-
-Run:
+Set your Gemini API key:
 
 ```powershell
-python -m agent.main --config config.local.yaml --prometheus-url http://localhost:9090
+$env:GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>"
 ```
 
-Fast demo with mock alert:
+Start the continuously running agent:
 
 ```powershell
-python -m agent.main --config config.local.yaml --mock-alert
+python run_agent.py --github-repo OWNER/self-healing-gitops-manifests --manifests-repo-path C:\absolute\path\to\manifests-repo
+```
+
+Fast one-cycle demo with mock alert:
+
+```powershell
+python run_agent.py --mock-alert --llm mock --once --dry-run
 ```
 
 ## 8. Review and Merge PR
