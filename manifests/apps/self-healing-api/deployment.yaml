@@ -6,7 +6,7 @@ metadata:
   labels:
     app: self-healing-api
   annotations:
-    self-healing.dev/allowed-fix: "add REQUIRED_GREETING env only"
+    self-healing.dev/allowed-fix: add REQUIRED_GREETING env only
 spec:
   replicas: 1
   selector:
@@ -18,24 +18,26 @@ spec:
         app: self-healing-api
     spec:
       containers:
-        - name: api
-          image: docker.io/sadsmiskin/self-healing-api:latest
-          imagePullPolicy: Always
-          ports:
-            - name: http
-              containerPort: 8080
-          env:
-            - name: LOG_LEVEL
-              value: info
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+      - name: api
+        image: docker.io/sadsmiskin/self-healing-api:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8080
+        env:
+        - name: LOG_LEVEL
+          value: info
+        - name: REQUIRED_GREETING
+          value: hello-from-gitops
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
