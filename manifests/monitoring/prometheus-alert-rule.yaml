@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: self-healing-api-crashloop
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: self-healing-api.rules
+      rules:
+        - alert: SelfHealingApiCrashLoopBackOff
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="self-healing",pod=~"self-healing-api-.*"}[5m]) > 0
+            and on(namespace,pod,container)
+            kube_pod_container_status_waiting_reason{namespace="self-healing",pod=~"self-healing-api-.*",reason="CrashLoopBackOff"} == 1
+          for: 1m
+          labels:
+            severity: warning
+            app: self-healing-api
+            self_healing: "enabled"
+          annotations:
+            summary: self-healing-api is in CrashLoopBackOff
+            description: The self-healing-api pod is restarting and waiting with CrashLoopBackOff.

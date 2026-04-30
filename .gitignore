@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.env
+config.local.yaml
+agents/config.local.yaml
+
+# Local platform files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/

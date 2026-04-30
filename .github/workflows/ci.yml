@@ -1,0 +1,107 @@
+name: Build and Publish API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: self-healing-api
+
+jobs:
+  build-and-push:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+      image_ref: ${{ steps.meta.outputs.image_ref }}
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Compute image metadata
+        id: meta
+        run: |
+          IMAGE_TAG="${GITHUB_SHA::7}"
+          IMAGE_REF="docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./app
+          file: ./app/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image_ref }}
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest
+
+  update-manifests:
+    name: Optionally update manifests image tag
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      contents: read
+    env:
+      MANIFESTS_REPO: ${{ secrets.MANIFESTS_REPO }}
+      MANIFESTS_REPO_TOKEN: ${{ secrets.MANIFESTS_REPO_TOKEN }}
+    steps:
+      - name: Skip when manifest update is not configured
+        if: ${{ env.MANIFESTS_REPO == '' || env.MANIFESTS_REPO_TOKEN == '' }}
+        run: echo "MANIFESTS_REPO and MANIFESTS_REPO_TOKEN are optional; skipping manifest update."
+
+      - name: Checkout manifests repo
+        if: ${{ env.MANIFESTS_REPO != '' && env.MANIFESTS_REPO_TOKEN != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.MANIFESTS_REPO }}
+          token: ${{ env.MANIFESTS_REPO_TOKEN }}
+          path: manifests-repo
+
+      - name: Update deployment image
+        id: update_manifest
+        if: ${{ env.MANIFESTS_REPO != '' && env.MANIFESTS_REPO_TOKEN != '' }}
+        working-directory: manifests-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          sed -i "s#image: .*self-healing-api:.*#image: ${{ needs.build-and-push.outputs.image_ref }}#g" manifests/apps/self-healing-api/deployment.yaml
+          if git diff --quiet; then
+            echo "Deployment already uses ${{ needs.build-and-push.outputs.image_ref }}."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          git checkout -b "ci/update-image-${{ needs.build-and-push.outputs.image_tag }}"
+          git add manifests/apps/self-healing-api/deployment.yaml
+          git commit -m "Update self-healing-api image to ${{ needs.build-and-push.outputs.image_tag }}"
+          git push origin "ci/update-image-${{ needs.build-and-push.outputs.image_tag }}"
+
+      - name: Create image update PR
+        if: ${{ env.MANIFESTS_REPO != '' && env.MANIFESTS_REPO_TOKEN != '' && steps.update_manifest.outputs.changed == 'true' }}
+        env:
+          GH_TOKEN: ${{ env.MANIFESTS_REPO_TOKEN }}
+        working-directory: manifests-repo
+        run: |
+          gh pr create \
+            --repo "${{ env.MANIFESTS_REPO }}" \
+            --base main \
+            --head "ci/update-image-${{ needs.build-and-push.outputs.image_tag }}" \
+            --title "Update self-healing-api image to ${{ needs.build-and-push.outputs.image_tag }}" \
+            --body "Updates the GitOps deployment image to `${{ needs.build-and-push.outputs.image_ref }}`."
