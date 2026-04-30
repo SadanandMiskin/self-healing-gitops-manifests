@@ -17,8 +17,8 @@ class Diagnosis:
 
 def diagnose(config: AgentConfig, issue: DetectedIssue, provider: str | None = None) -> Diagnosis:
     llm_provider = provider or config.llm_provider
-    if llm_provider == "openai":
-        return _diagnose_with_openai(config, issue)
+    if llm_provider == "gemini":
+        return _diagnose_with_gemini(config, issue)
     return _diagnose_with_mock(config, issue)
 
 
@@ -42,13 +42,13 @@ def _diagnose_with_mock(config: AgentConfig, issue: DetectedIssue) -> Diagnosis:
     )
 
 
-def _diagnose_with_openai(config: AgentConfig, issue: DetectedIssue) -> Diagnosis:
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("OPENAI_API_KEY is required when llm_provider is openai")
+def _diagnose_with_gemini(config: AgentConfig, issue: DetectedIssue) -> Diagnosis:
+    if not os.getenv("GEMINI_API_KEY"):
+        raise RuntimeError("GEMINI_API_KEY is required when llm_provider is gemini")
 
-    from openai import OpenAI
+    from google import genai
 
-    client = OpenAI()
+    client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
     prompt = f"""
 You are diagnosing a Kubernetes CrashLoopBackOff for a demo service.
 
@@ -68,11 +68,11 @@ Logs:
 
 Return concise text with category, confidence from 0 to 1, explanation, and recommended fix.
 """
-    response = client.responses.create(
-        model=config.openai_model,
-        input=prompt,
+    response = client.models.generate_content(
+        model=config.gemini_model,
+        contents=prompt,
     )
-    text = response.output_text.strip()
+    text = response.text.strip()
     lowered = text.lower()
     issue_type = "missing_env_var" if "missing_env_var" in lowered else "unknown"
     confidence = 0.9 if issue_type == "missing_env_var" else 0.3
