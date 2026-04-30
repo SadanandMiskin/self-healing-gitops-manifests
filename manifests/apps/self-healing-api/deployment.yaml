@@ -11,7 +11,7 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: self-healing-api
+      app: self-healing-api3
   template:
     metadata:
       labels:
