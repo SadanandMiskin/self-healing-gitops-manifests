@@ -11,7 +11,7 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: self-healing-api3
+      app: self-healing-api
   template:
     metadata:
       labels:
@@ -22,7 +22,7 @@ spec:
         image: docker.io/sadsmiskin/self-healing-api:latest
         imagePullPolicy: Always
         ports:
-        - name: http
+        - name: vttp
           containerPort: 8080
         env:
         - name: LOG_LEVEL
