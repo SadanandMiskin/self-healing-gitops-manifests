@@ -25,7 +25,7 @@ spec:
         - name: http
           containerPort: 8080
         env:
-        - name: LOG_LEVEL
+        - name: LOG_LEVE
           value: info
         - name: REQUIRED_GREETING
           value: hello-from-gitops
