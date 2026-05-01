@@ -27,8 +27,8 @@ spec:
         env:
         - name: LOG_LEVEL
           value: info
-        - name: REQUIRED_GREETING
-          value: hello-from-gitops
+        # - name: REQUIRED_GREETING
+        #   value: hello-from-gitops
         readinessProbe:
           httpGet:
             path: /healthz
