@@ -1,5 +1,8 @@
 # Self-Healing Agentic DevOps Pipeline with GitOps
 
+<img width="3137" height="1357" alt="image" src="https://github.com/user-attachments/assets/911487c3-d3f7-4ff8-92fa-e914b7421b7e" />
+
+
 Production-style local demo of a small GitOps pipeline where Argo CD deploys a broken Kubernetes app, Prometheus detects the failure, and a Python AI agent proposes a manifest-only fix through a GitHub pull request.
 
 The project is intentionally small:
