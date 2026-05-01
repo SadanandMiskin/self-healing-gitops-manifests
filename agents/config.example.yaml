@@ -1,0 +1,20 @@
+app_name: self-healing-api
+namespace: self-healing
+container_name: api
+required_env_name: REQUIRED_GREETING
+required_env_value: hello-from-gitops
+prometheus_url: http://localhost:9090
+llm_provider: mistral
+llm_model: mistral-small-latest
+poll_interval_seconds: 30
+state_file: .agent-state.yaml
+
+# Absolute path recommended. For this scaffold, it can point at the project root
+# if deployment_path includes manifests/apps/...
+manifests_repo_path: C:\Users\miski\Documents\Codex\2026-04-30\new-project-you-are-a-senior
+deployment_path: manifests/apps/self-healing-api/deployment.yaml
+
+# GitHub repo that stores the manifests source of truth.
+github_repo: SadanandMiskin/self-healing-gitops-manifests
+base_branch: main
+branch_prefix: self-heal
